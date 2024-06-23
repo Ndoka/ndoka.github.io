@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Watercare Address Finder</title>
+    <script src="//js.jotform.com/JotFormCustomWidget.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAcjinmgu9IwIFGVWgcmUwkTR23M27wyWk&libraries=places"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wdth,wght@0,75..100,300..800;1,75..100,300..800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body>
+    <main id="main" class="container-fluid">
+      <div class="form-group">
+        <input
+          type="text"
+          id="address-user-input"
+          class="form-control"
+          placeholder="Enter your address to search"
+        />
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 form-group">
+          <label for="house-number" class="mr-2">House Number</label>
+          <input type="text" id="house-number" class="form-control" placeholder="73" />
+        </div>
+        <div class="col-md-6 form-group">
+          <label for="street-name" class="mr-2">Street Name</label>
+          <input type="text" id="street-name" class="form-control" placeholder="Remuera Rd." />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 form-group">
+          <label for="suburb">Suburb</label>
+          <input type="text" id="suburb" class="form-control" placeholder="Newmarket"  />
+        </div>
+        <div class="col-md-6 form-group">
+          <label for="postal-code">Postal Code</label>
+          <input type="text" id="postal-code" class="form-control" placeholder="1050" />
+        </div>
+      </div>
+    </main>
+    <script>
+    function Address(containerID, params) {
+      
+      const fullAddressInput = document.getElementById("address-user-input");
+      const houseNumberInput = document.getElementById("house-number");
+      const streetNameInput = document.getElementById("street-name");
+      const suburbInput = document.getElementById("suburb");
+      const postalCodeInput = document.getElementById("postal-code");
+
+      const getData = () => {
+        const fullAddress = fullAddressInput.value
+       
+        if (fullAddress){
+          return {
+            valid: true,
+            value: fullAddress
+          }
+        }
+
+        const houseNumber = houseNumberInput.value;
+        const streetName = streetNameInput.value;
+        const suburb = suburbInput.value;
+        const postalCode = postalCodeInput.value;
+
+        const valid = !!houseNumber && !!streetName && !!suburb && !!postalCode;
+        return {
+          valid,
+          value: valid ? `${houseNumber} ${streetName}, ${suburb}, ${postalCode}` : ''
+        }
+      }
+
+      const sendData = () => {
+        JFCustomWidget.sendData(getData())
+      }
+
+      const init = () =>{
+        try {
+          let houseNumber = "";
+          let streetName = "";
+          let suburb = "";
+          let postcode = "";
+    
+          const input = document.getElementById("address-user-input");
+    
+          const options = {
+            componentRestrictions: { country: "nz" },
+          };
+          const autocomplete = new google.maps.places.Autocomplete(input, options);
+          google.maps.event.addListener(autocomplete, "place_changed", function () {
+            var place = autocomplete.getPlace();
+    
+            for (const component of place.address_components) {
+              const componentType = component.types[0];
+    
+              switch (componentType) {
+                case "street_number": {
+                  houseNumber = `${component.long_name}`;
+                  break;
+                }
+    
+                case "route": {
+                  streetName = `${component.long_name}`;
+                  break;
+                }
+    
+                case "postal_code": {
+                  postcode = `${component.long_name}`;
+                  break;
+                }
+    
+                case "sublocality_level_1": {
+                  suburb = `${component.long_name}`;
+                }
+              }
+            }
+    
+            houseNumberInput.value = houseNumber;
+            streetNameInput.value = streetName;
+            suburbInput.value = suburb;
+            postalCodeInput.value = postcode;
+
+            sendData()
+          });
+
+          
+
+          fullAddressInput.addEventListener('change', sendData);
+
+          houseNumberInput.addEventListener('change', sendData);
+
+          streetNameInput.addEventListener('change', sendData);
+
+          suburbInput.addEventListener('change', sendData);
+
+          postalCodeInput.addEventListener('change', sendData);
+        } catch (error) {
+          console.warn("Something went wrong with Google Maps API");
+        }
+      }
+
+      this.init = init
+      this.getData = getData
+    }
+
+    JFCustomWidget.subscribe("ready", function (data) {
+      var widget = new Address();
+      widget.init(data);
+      JFCustomWidget.subscribe("submit", function () {
+        JFCustomWidget.sendSubmit(widget.getData());
+      });
+    });
+    </script>
+</body>
+</html>
